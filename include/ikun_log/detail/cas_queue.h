@@ -24,7 +24,6 @@
 #ifndef CAS_QUEUE_H
 #define CAS_QUEUE_H
 
-#include "ikun_log/detail/cpuwait.h"
 #include <ikun_log/detail/backoff.h>
 
 #include <array>
@@ -42,6 +41,33 @@ constexpr std::int64_t CacheLine = 64;
 #else
 constexpr std::int64_t CacheLine = IKUN_LOG_CACHE_LINE_SIZE;
 #endif
+
+class CpuWait {
+public:
+  void wait() {
+    for (int i = 0; i < count_; i++) {
+      cpu_wait();
+    }
+    if (count_ < 1024) {
+      count_ = count_ * 2;
+    }
+  }
+
+  void reset() { count_ = 1; }
+
+private:
+  void cpu_wait() {
+#if defined(__X86_64__) || defined(__ia32__) || defined(__i386__)
+    __builtin_ia32_pause();
+#elif defined(__arm__) || defined(__aarch64__)
+    __asm__ __volatile__("yield");
+#else
+    std::this_thread::yield();
+#endif
+  }
+
+  int count_{1};
+};
 
 template <typename T, int capacity> class CasQueue {
 private:

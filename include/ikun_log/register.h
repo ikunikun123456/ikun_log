@@ -25,10 +25,8 @@ SOFTWARE.
 #ifndef REGISTER_H
 #define REGISTER_H
 
-#include <ikun_log/append/async_file_append.h>
 #include <ikun_log/append/stdout_append.h>
 #include <ikun_log/async_logger.h>
-#include <ikun_log/detail/filename.h>
 #include <ikun_log/log_level.h>
 #include <ikun_log/logger.h>
 

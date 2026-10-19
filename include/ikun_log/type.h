@@ -26,9 +26,31 @@ SOFTWARE.
 #ifndef TYPE_H
 #define TYPE_H
 
+#include "ikun_log/detail/util.h"
+#include <source_location>
 #include <stdint.h>
 #include <string_view>
 #include <type_traits>
+
+namespace ikun::log {
+
+struct format_string_wrapper {
+  consteval format_string_wrapper(
+      const char *str, detail::FixString<30> loc = detail::StringFromLocation(
+                           std::source_location::current()))
+      : str_{str}, loc_{loc} {
+    len_ = std::char_traits<char>::length(str);
+  }
+  operator std::string_view() const { return {str_, len_}; }
+
+  std::string_view get() const { return str_; }
+
+  const char *str_;
+  detail::FixString<30> loc_;
+  std::size_t len_;
+};
+
+} // namespace ikun::log
 
 template <typename T>
 concept Format = std::is_same_v<T, bool> || std::is_same_v<T, char> ||

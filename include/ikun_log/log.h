@@ -26,8 +26,7 @@ SOFTWARE.
 #ifndef LOG_H
 #define LOG_H
 
-#include "ikun_log/format_string_wrapper.h"
-#include <ikun_log/detail/filename.h>
+#include <ikun_log/detail/util.h>
 #include <ikun_log/log_level.h>
 #include <ikun_log/register.h>
 

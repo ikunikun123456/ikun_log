@@ -25,23 +25,19 @@ SOFTWARE.
 #ifndef ASYNC_LOGGER_H
 #define ASYNC_LOGGER_H
 
-#include "ikun_log/format_string_wrapper.h"
-#include <ikun_log/append/file_append.h>
-#include <ikun_log/detail/buffer.h>
-#include <ikun_log/detail/cas_queue.h>
-#include <ikun_log/detail/cpuwait.h>
-#include <ikun_log/detail/filename.h>
-#include <ikun_log/detail/tsc_to_ns.h>
-#include <ikun_log/detail/util.h>
-#include <ikun_log/log_level.h>
-#include <ikun_log/type.h>
-
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <format>
+#include <ikun_log/append/file_append.h>
+#include <ikun_log/detail/buffer.h>
+#include <ikun_log/detail/cas_queue.h>
+#include <ikun_log/detail/tsc_to_ns.h>
+#include <ikun_log/detail/util.h>
+#include <ikun_log/log_level.h>
+#include <ikun_log/type.h>
 #include <source_location>
 #include <string_view>
 #include <thread>

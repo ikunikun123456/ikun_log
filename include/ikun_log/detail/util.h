@@ -25,11 +25,93 @@ SOFTWARE.
 #ifndef UTIL_H
 #define UTIL_H
 
-#include "ikun_log/detail/buffer.h"
 #include <array>
+#include <cstring>
+#include <ikun_log/detail/buffer.h>
 #include <ikun_log/detail/tsc_to_ns.h>
+#include <ikun_log/log_level.h>
+#include <source_location>
 
 namespace ikun::log::detail {
+
+template <int N> struct FixString {
+  std::array<char, N> str;
+  int size;
+};
+
+inline consteval std::string_view BaseName(std::string_view path) noexcept {
+  auto pos = path.find_last_of("/\\");
+  path = pos == std::string_view::npos ? path : path.substr(pos + 1);
+  if (path.size() > 20) {
+    return path.substr(0, 20);
+  }
+  return path;
+}
+
+inline consteval FixString<20> StringFromStdsize(std::size_t num) noexcept {
+  std::array<char, 10> nums{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+  std::array<char, 20> str{};
+  int i = 0;
+  while (true) {
+    int count = num % 10;
+    str[i] = nums.at(count);
+    num = num / 10;
+    if (num == 0) {
+      break;
+    }
+    i++;
+  }
+  int temp = i;
+  std::array<char, 20> new_str{};
+  for (int j = 0; j <= temp; j++, i--) {
+    new_str[j] = str[i];
+  }
+  temp++;
+  if (temp >= 8) {
+    temp = 7;
+  }
+  return {new_str, temp};
+}
+
+inline consteval FixString<30>
+StringFromLocation(const std::source_location &location) {
+  std::string_view filename = BaseName(location.file_name());
+  FixString<20> str = StringFromStdsize(location.line());
+  std::array<char, 30> new_str{'\t'};
+  int i = 1;
+  for (; i <= static_cast<int>(filename.size()); i++) {
+    new_str[i] = filename.at(i - 1);
+  }
+  new_str[i++] = ':';
+  for (int j = 0; i < str.size + static_cast<int>(filename.size()) + 2;) {
+    new_str[i++] = str.str[j++];
+  }
+  new_str[i++] = '\t';
+  return {new_str, i};
+};
+
+inline std::string FilenameFromCurrenttime() {
+  try {
+    auto path = std::string("./");
+    auto temp_path = std::getenv("IKUN_LOG_DIR");
+    if (temp_path != nullptr) {
+      path = temp_path;
+    }
+    std::array<char, 30> local_time{};
+    std::format_to_n(local_time.begin(), 19, "{:%Y-%m-%d_%H-%M-%S}",
+                     std::chrono::system_clock::now());
+    memcpy(local_time.begin() + 19, ".txt", 4);
+    return path + local_time.data();
+  } catch (const std::exception &e) {
+#ifdef IKUN_LOG_USE_STDERR
+    constexpr auto error_msg = "filename create failed";
+    std::fwrite(error_msg, 1, std::strlen(error_msg), stderr);
+    std::fwrite(e.what(), 1, std::strlen(e.what()), stderr);
+    std::array<char, 50> time_arr{"./async_log.txt"};
+    return std::string(time_arr.data());
+#endif
+  }
+}
 
 consteval std::array<std::array<char, 4>, 1000> GetTimeArr() {
   std::array<std::array<char, 4>, 1000> a{};

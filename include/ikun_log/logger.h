@@ -25,9 +25,7 @@ SOFTWARE.
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "ikun_log/format_string_wrapper.h"
 #include <ikun_log/detail/buffer.h>
-#include <ikun_log/detail/filename.h>
 #include <ikun_log/detail/tsc_to_ns.h>
 #include <ikun_log/detail/util.h>
 #include <ikun_log/log_level.h>

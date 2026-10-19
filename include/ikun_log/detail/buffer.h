@@ -26,14 +26,8 @@ SOFTWARE.
 #define BUFFER_H
 
 #include <array>
-#include <cerrno>
-#include <cstddef>
-#include <cstdio>
 #include <cstring>
-#include <ikun_log/detail/filename.h>
-#include <ikun_log/log_level.h>
-
-#include <string_view>
+#include <memory>
 #include <vector>
 
 #if defined(__GNUC__) && !defined(__clang__)
