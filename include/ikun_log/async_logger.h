@@ -22,8 +22,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef ASYNC_LOGGER_H
-#define ASYNC_LOGGER_H
+#ifndef IKUN_LOG_ASYNC_LOGGER_H
+#define IKUN_LOG_ASYNC_LOGGER_H
 
 #include <atomic>
 #include <cstdio>
@@ -31,13 +31,12 @@ SOFTWARE.
 #include <cstring>
 #include <exception>
 #include <format>
-#include <ikun_log/append/file_append.h>
-#include <ikun_log/detail/buffer.h>
-#include <ikun_log/detail/cas_queue.h>
-#include <ikun_log/detail/tsc_to_ns.h>
-#include <ikun_log/detail/util.h>
-#include <ikun_log/log_level.h>
-#include <ikun_log/type.h>
+#include <ikun_log/append.h>
+#include <ikun_log/detail_buffer.h>
+#include <ikun_log/detail_cas_queue.h>
+#include <ikun_log/detail_tscns.h>
+#include <ikun_log/detail_util.h>
+#include <ikun_log/log_type.h>
 #include <source_location>
 #include <string_view>
 #include <thread>
@@ -49,7 +48,7 @@ static constexpr int QUEUE_CAPACITY = IKUN_LOG_QUEUE_CAPACITY;
 #endif
 
 namespace ikun::log {
-template <Append T> class AsyncLogger {
+template <Appendable T> class AsyncLogger {
 public:
   AsyncLogger(const char *name, Loglevel loglevel, T append) noexcept
       : name_(name), loglevel_(loglevel), append_(std::move(append)),
@@ -104,7 +103,7 @@ public:
     }
   }
   inline void Trace(std::string_view msg,
-                    detail::FixString<30> loc = detail::StringFromLocation(
+                    FixString<30> loc = StringFromLocation(
                         std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::TRACE) {
       Log(msg, Loglevel::TRACE, loc);
@@ -112,7 +111,7 @@ public:
   }
 
   inline void Debug(std::string_view msg,
-                    detail::FixString<30> loc = detail::StringFromLocation(
+                    FixString<30> loc = StringFromLocation(
                         std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::DEBUG) {
       Log(msg, Loglevel::DEBUG, loc);
@@ -120,7 +119,7 @@ public:
   }
 
   inline void Info(std::string_view msg,
-                   detail::FixString<30> loc = detail::StringFromLocation(
+                   FixString<30> loc = StringFromLocation(
                        std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::INFO) {
       Log(msg, Loglevel::INFO, loc);
@@ -128,7 +127,7 @@ public:
   }
 
   inline void Warn(std::string_view msg,
-                   detail::FixString<30> loc = detail::StringFromLocation(
+                   FixString<30> loc = StringFromLocation(
                        std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::WARN) {
       Log(msg, Loglevel::WARN, loc);
@@ -136,7 +135,7 @@ public:
   }
 
   inline void Error(std::string_view msg,
-                    detail::FixString<30> loc = detail::StringFromLocation(
+                    FixString<30> loc = StringFromLocation(
                         std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::ERROR) {
       Log(msg, Loglevel::ERROR, loc);
@@ -150,20 +149,20 @@ public:
   Loglevel GetLoglevel() noexcept { return loglevel_; }
 
   void Log(std::string_view msg, Loglevel loglevel,
-           const detail::FixString<30> &loc) noexcept {
+           const FixString<30> &loc) noexcept {
     return Log_(msg.data(), msg.size(), loglevel, loc);
   }
 
   template <class... Args>
   void LogFormat(std::string_view msg, Loglevel loglevel,
-                 const detail::FixString<30> &loc, Args &&...args) noexcept {
+                 const FixString<30> &loc, Args &&...args) noexcept {
     return LogFormat_(msg, loglevel, loc, std::forward<Args>(args)...);
   }
 
 private:
   template <class... Args>
   void LogFormat_(std::string_view msg, Loglevel loglevel,
-                  const detail::FixString<30> &loc, Args &&...args) noexcept {
+                  const FixString<30> &loc, Args &&...args) noexcept {
     static thread_local std::string str;
     try {
       [[maybe_unused]] static thread_local bool result = [&]() {
@@ -185,7 +184,7 @@ private:
   }
 
   void Log_(const char *msg, std::size_t len, Loglevel loglevel,
-            const detail::FixString<30> &loc) noexcept {
+            const FixString<30> &loc) noexcept {
     static thread_local detail::Buffer buf;
     try {
       detail::CpuWait cpuwait;
@@ -232,23 +231,23 @@ private:
   void ThreadFunc() {
     using namespace std::literals::chrono_literals;
     std::size_t count = 0;
-    detail::Backoff backoff;
+    detail::CpuWait cpuWait;
     detail::Buffer buf;
     while (!stop_.load(std::memory_order::relaxed)) [[likely]] {
       for (; count < count + 20000; count++) {
         auto result = queue_.pop(buf);
         if (!result) [[unlikely]] {
           for (int i = 0; i < 8; i++) {
-            backoff.pause();
+            cpuWait.wait();
             if (!queue_.empty()) [[likely]] {
               continue;
             }
           }
           if (!queue_.empty()) [[likely]] {
-            backoff.reset();
+            cpuWait.reset();
             continue;
           }
-          if constexpr (std::is_same_v<T, FileAppend>) {
+          if constexpr (FileAppendable<T>) {
             if (count > 10000) [[unlikely]] {
               append_.SetFile(detail::FilenameFromCurrenttime().c_str());
             }

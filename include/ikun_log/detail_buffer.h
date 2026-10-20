@@ -22,12 +22,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef BUFFER_H
-#define BUFFER_H
+#ifndef IKUN_LOG_DETAIL_BUFFER_H
+#define IKUN_LOG_DETAIL_BUFFER_H
 
 #include <array>
 #include <cstring>
-#include <memory>
+#include <string_view>
 #include <vector>
 
 #if defined(__GNUC__) && !defined(__clang__)

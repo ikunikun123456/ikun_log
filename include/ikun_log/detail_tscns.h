@@ -23,18 +23,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 // changed 2026 firstestikun firstestikun@outlook.com
-#ifndef TSC_TO_NS_H
-#define TSC_TO_NS_H
+#ifndef IKUN_LOG_DETAIL_TSCNS_H
+#define IKUN_LOG_DETAIL_TSCNS_H
 
 #include <chrono>
 #include <thread>
 
 namespace ikun::log::detail {
 
-class TscToNs {
+class Tscns {
 public:
-  TscToNs(int64_t init_calibrate_ns = 20'000'000,
-          int64_t internal_calibrate_ns = 10'000'000'000) {
+  Tscns(int64_t init_calibrate_ns = 20'000'000,
+        int64_t internal_calibrate_ns = 10'000'000'000) {
     internal_cailbrate_ns_ = internal_calibrate_ns;
     SyncTime(base_tsc_, base_ns_);
     int64_t expired_ns = base_ns_ + init_calibrate_ns;
@@ -47,7 +47,7 @@ public:
         static_cast<double>(cur_ns - base_ns_) / (cur_tsc - base_tsc_);
     next_cailbrate_tsc_ = cur_tsc + internal_cailbrate_ns_ * ns_per_tsc_;
   }
-  ~TscToNs() {}
+  ~Tscns() {}
 
   int64_t GetNs() {
 #if defined(_M_AMD64) || defined(__i386__) || defined(__x86_64__)

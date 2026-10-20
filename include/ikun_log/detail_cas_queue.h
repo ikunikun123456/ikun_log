@@ -21,16 +21,15 @@
  * should not be interpreted as representing official policies, either expressed
  * or implied, of Dmitry Vyukov.
  */
-#ifndef CAS_QUEUE_H
-#define CAS_QUEUE_H
-
-#include <ikun_log/detail/backoff.h>
+#ifndef IKUN_LOG_DETAIL_CAS_QUEUE_H
+#define IKUN_LOG_DETAIL_CAS_QUEUE_H
 
 #include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <thread>
 #include <type_traits>
 #include <utility>
 

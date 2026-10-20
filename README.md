@@ -11,6 +11,39 @@ cmake --build build
 cmake --install build
 ```
 
+## Example
+
+```
+    #include <ikun_log/log.h>
+
+    //logger,write to console
+    Trace("hello world!");
+    Debug("hello world!");
+   	Info("hello world!");
+    Warn("hello world!");
+    Error("hello world!");
+    
+    //async logger,write to file
+    AsyncTrace("hello world!");
+    AsyncDebug("hello world!");
+    AsyncInfo("hello world!");
+    AsyncWarn("hello world!");
+    AsyncError("hello world!");
+      
+    //format is std::format
+    std::string name = "cxk";
+    Trace("hello world!,my name is {}", name);
+    Debug("hello world!,my name is {}", name);
+    Info("hello world!,my name is {}", name);
+    Warn("hello world!,my name is {}", name);
+    Error("hello world!,my name is {}", name);
+    AsyncTrace("hello world!,my name is {}", name);
+    AsyncDebug("hello world!,my name is {}", name);
+    AsyncInfo("hello world!,my name is {}", name);
+    AsyncWarn("hello world!,my name is {}", name);
+    AsyncError("hello world!,my name is {}", name);
+```
+
 ## Usage
 
 ```
@@ -164,45 +197,12 @@ note: the 10000 args don't test exactly when  the 10000 args and 1'000'000 args 
         ->Iterations(1);
 ```
 
-## Example
-
-```
-    //logger,write to console
-    Trace("hello world!");
-    Debug("hello world!");
-   	Info("hello world!");
-    Warn("hello world!");
-    Error("hello world!");
-    
-    //async logger,write to file
-    AsyncTrace("hello world!");
-    AsyncDebug("hello world!");
-    AsyncInfo("hello world!");
-    AsyncWarn("hello world!");
-    AsyncError("hello world!");
-      
-    //format is std::format
-    std::string name = "cxk";
-    Trace("hello world!,my name is {}", name);
-    Debug("hello world!,my name is {}", name);
-    Info("hello world!,my name is {}", name);
-    Warn("hello world!,my name is {}", name);
-    Error("hello world!,my name is {}", name);
-    AsyncTrace("hello world!,my name is {}", name);
-    AsyncDebug("hello world!,my name is {}", name);
-    AsyncInfo("hello world!,my name is {}", name);
-    AsyncWarn("hello world!,my name is {}", name);
-    AsyncError("hello world!,my name is {}", name);
-```
-
 ## Refernce 
 
 **Dmitry Vyukov's MPMC Queue**
 
-include/ikun_log/detail/cpuwait.h
-
-include/ikun_log/detail/cas_queue.h
+include/ikun_log/detail_cas_queue.h
 
 [https://github.com/MengRao/tscns.git]()
 
-include/ikun_log/detail/tsctons.h
+include/ikun_log/detail_tscns.h

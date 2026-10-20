@@ -22,14 +22,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef IKUN_LOG_LOGGER_H
+#define IKUN_LOG_LOGGER_H
 
-#include <ikun_log/detail/buffer.h>
-#include <ikun_log/detail/tsc_to_ns.h>
-#include <ikun_log/detail/util.h>
-#include <ikun_log/log_level.h>
-#include <ikun_log/type.h>
+#include <ikun_log/detail_buffer.h>
+#include <ikun_log/detail_tscns.h>
+#include <ikun_log/detail_util.h>
+#include <ikun_log/log_type.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -41,7 +40,7 @@ SOFTWARE.
 #include <string_view>
 
 namespace ikun::log {
-template <Append T> class Logger {
+template <Appendable T> class Logger {
 public:
   Logger(const char *name, Loglevel loglevel, T append) noexcept
       : name_(name), loglevel_(loglevel), append_(append) {}
@@ -87,7 +86,7 @@ public:
     }
   }
   inline void Trace(std::string_view msg,
-                    detail::FixString<30> loc = detail::StringFromLocation(
+                    FixString<30> loc = StringFromLocation(
                         std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::TRACE) {
       Log(msg, Loglevel::TRACE, loc);
@@ -95,7 +94,7 @@ public:
   }
 
   inline void Debug(std::string_view msg,
-                    detail::FixString<30> loc = detail::StringFromLocation(
+                    FixString<30> loc = StringFromLocation(
                         std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::DEBUG) {
       Log(msg, Loglevel::DEBUG, loc);
@@ -103,7 +102,7 @@ public:
   }
 
   inline void Info(std::string_view msg,
-                   detail::FixString<30> loc = detail::StringFromLocation(
+                   FixString<30> loc = StringFromLocation(
                        std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::INFO) {
       Log(msg, Loglevel::INFO, loc);
@@ -111,7 +110,7 @@ public:
   }
 
   inline void Warn(std::string_view msg,
-                   detail::FixString<30> loc = detail::StringFromLocation(
+                   FixString<30> loc = StringFromLocation(
                        std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::WARN) {
       Log(msg, Loglevel::WARN, loc);
@@ -119,7 +118,7 @@ public:
   }
 
   inline void Error(std::string_view msg,
-                    detail::FixString<30> loc = detail::StringFromLocation(
+                    FixString<30> loc = StringFromLocation(
                         std::source_location::current())) noexcept {
     if constexpr (IKUN_LOG_ACTIVE_LEVEL <= Loglevel::ERROR) {
       Log(msg, Loglevel::ERROR, loc);
@@ -133,21 +132,20 @@ public:
   Loglevel GetLoglevel() noexcept { return loglevel_; }
 
   void Log(std::string_view msg, Loglevel loglevel,
-           const detail::FixString<30> &loc) const noexcept {
+           const FixString<30> &loc) const noexcept {
     Log_(msg.data(), msg.size(), loglevel, loc);
   }
 
   template <class... Args>
-  void LogFormat(std::string_view msg, Loglevel loglevel,
-                 detail::FixString<30> &loc, Args &&...args) const noexcept {
+  void LogFormat(std::string_view msg, Loglevel loglevel, FixString<30> &loc,
+                 Args &&...args) const noexcept {
     LogFormat_(msg, loglevel, loc, std::forward<Args>(args)...);
   }
 
 private:
   template <class... Args>
   void LogFormat_(std::string_view msg, Loglevel loglevel,
-                  const detail::FixString<30> &loc,
-                  Args &&...args) const noexcept {
+                  const FixString<30> &loc, Args &&...args) const noexcept {
     static thread_local std::string str;
     try {
       [[maybe_unused]] static thread_local bool result = [&]() {
@@ -168,7 +166,7 @@ private:
   }
 
   void Log_(const char *msg, std::size_t len, Loglevel loglevel,
-            const detail::FixString<30> &loc) const noexcept {
+            const FixString<30> &loc) const noexcept {
     static thread_local detail::Buffer buf;
     try {
       // 进行格式化

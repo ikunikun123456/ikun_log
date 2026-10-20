@@ -22,8 +22,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef FILE_APPEND_H
-#define FILE_APPEND_H
+#ifndef IKUN_LOG_APPEND_H
+#define IKUN_LOG_APPEND_H
 
 #include <cerrno>
 #include <cstdio>
@@ -31,6 +31,40 @@ SOFTWARE.
 #include <string_view>
 
 namespace ikun::log {
+
+class StdoutAppend {
+public:
+  StdoutAppend() noexcept = default;
+  ~StdoutAppend() noexcept = default;
+
+  void Append(const char *msg, std::size_t len) const noexcept {
+    std::size_t count = std::fwrite(msg, 1, len, stdout);
+    if (count < len) [[unlikely]] {
+#ifdef IKUN_LOG_USE_STDERR
+      constexpr auto error_msg = "log write failed";
+      std::fwrite(error_msg, 1, std::strlen(error_msg), stderr);
+#endif
+    }
+  }
+
+  void Flush() const noexcept {
+    int result = std::fflush(stdout);
+    if (result == EOF) [[unlikely]] {
+#ifdef IKUN_LOG_USE_STDERR
+      constexpr auto error_msg = "log flush failed";
+      std::fwrite(error_msg, 1, std::strlen(error_msg), stderr);
+#endif
+    }
+  }
+
+  bool IsSuccessed() noexcept {
+    if (stdout == nullptr) [[unlikely]] {
+      return false;
+    }
+    return true;
+  }
+};
+
 class FileAppend {
 public:
   FileAppend(const char *name) noexcept {

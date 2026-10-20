@@ -22,73 +22,42 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef IKUN_LOG_UTIL_H
+#define IKUN_LOG_UTIL_H
 
 #include <array>
 #include <cstring>
-#include <ikun_log/detail/buffer.h>
-#include <ikun_log/detail/tsc_to_ns.h>
-#include <ikun_log/log_level.h>
-#include <source_location>
+#include <ikun_log/detail_buffer.h>
+#include <ikun_log/detail_tscns.h>
+#include <ikun_log/log_type.h>
 
 namespace ikun::log::detail {
 
-template <int N> struct FixString {
-  std::array<char, N> str;
-  int size;
-};
-
-inline consteval std::string_view BaseName(std::string_view path) noexcept {
-  auto pos = path.find_last_of("/\\");
-  path = pos == std::string_view::npos ? path : path.substr(pos + 1);
-  if (path.size() > 20) {
-    return path.substr(0, 20);
-  }
-  return path;
+namespace {
+constexpr std::array<std::string_view, 7> arr{
+    "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF", "UNKNOWN"};
 }
 
-inline consteval FixString<20> StringFromStdsize(std::size_t num) noexcept {
-  std::array<char, 10> nums{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
-  std::array<char, 20> str{};
-  int i = 0;
-  while (true) {
-    int count = num % 10;
-    str[i] = nums.at(count);
-    num = num / 10;
-    if (num == 0) {
-      break;
+inline constexpr std::string_view
+StringFromLoglevel(Loglevel loglevel) noexcept {
+  auto idx = static_cast<std::size_t>(loglevel);
+  return arr[idx];
+}
+
+inline constexpr Loglevel
+LoglevelFromString(std::string_view loglevel) noexcept {
+  for (std::size_t i = 0; auto &str : arr) {
+    if (i >= arr.size()) {
+      return static_cast<Loglevel>(i - 1);
+    }
+    if (loglevel == str) {
+      return static_cast<Loglevel>(i);
     }
     i++;
   }
-  int temp = i;
-  std::array<char, 20> new_str{};
-  for (int j = 0; j <= temp; j++, i--) {
-    new_str[j] = str[i];
-  }
-  temp++;
-  if (temp >= 8) {
-    temp = 7;
-  }
-  return {new_str, temp};
+  auto size = std::size(arr);
+  return static_cast<Loglevel>(size - 1);
 }
-
-inline consteval FixString<30>
-StringFromLocation(const std::source_location &location) {
-  std::string_view filename = BaseName(location.file_name());
-  FixString<20> str = StringFromStdsize(location.line());
-  std::array<char, 30> new_str{'\t'};
-  int i = 1;
-  for (; i <= static_cast<int>(filename.size()); i++) {
-    new_str[i] = filename.at(i - 1);
-  }
-  new_str[i++] = ':';
-  for (int j = 0; i < str.size + static_cast<int>(filename.size()) + 2;) {
-    new_str[i++] = str.str[j++];
-  }
-  new_str[i++] = '\t';
-  return {new_str, i};
-};
 
 inline std::string FilenameFromCurrenttime() {
   try {
@@ -145,13 +114,12 @@ inline static void GetNs(std::size_t num, Buffer &buf) {
   buf.size += 10;
 }
 
-inline void Format_(Buffer &buf, Loglevel loglevel,
-                    const detail::FixString<30> &loc) {
-  static thread_local detail::TscToNs tsc_to_ns{};
+inline void Format_(Buffer &buf, Loglevel loglevel, const FixString<30> &loc) {
+  static thread_local detail::Tscns tscns{};
   static thread_local std::array<char, 20> local_time{};
   static thread_local std::size_t old_time_point = 0;
   // 计算当前时间
-  std::size_t time_point = tsc_to_ns.GetNs();
+  std::size_t time_point = tscns.GetNs();
   auto temp_time_point = time_point - old_time_point;
   // 更新秒时间
   if (temp_time_point >= 1'000'000'000) [[unlikely]] {
