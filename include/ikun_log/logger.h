@@ -42,8 +42,7 @@ SOFTWARE.
 namespace ikun::log {
 template <Appendable T> class Logger {
 public:
-  Logger(const char *name, Loglevel loglevel, T append) noexcept
-      : name_(name), loglevel_(loglevel), append_(append) {}
+  Logger(const char *name, T append) noexcept : name_(name), append_(append) {}
   ~Logger() {}
 
   template <class... Args>
@@ -127,10 +126,6 @@ public:
 
   void Flush() noexcept { append_.flush(); }
 
-  void SetLoglevel(Loglevel loglevel) noexcept { loglevel_ = loglevel; }
-
-  Loglevel GetLoglevel() noexcept { return loglevel_; }
-
   void Log(std::string_view msg, Loglevel loglevel,
            const FixString<30> &loc) const noexcept {
     Log_(msg.data(), msg.size(), loglevel, loc);
@@ -148,10 +143,7 @@ private:
                   const FixString<30> &loc, Args &&...args) const noexcept {
     static thread_local std::string str;
     try {
-      [[maybe_unused]] static thread_local bool result = [&]() {
-        str.reserve(350);
-        return true;
-      }();
+      str.reserve(350);
       // 消息
       std::vformat_to(std::back_inserter(str), msg,
                       std::make_format_args(args...));
@@ -167,11 +159,10 @@ private:
 
   void Log_(const char *msg, std::size_t len, Loglevel loglevel,
             const FixString<30> &loc) const noexcept {
-    static thread_local detail::Buffer buf;
+    detail::Buffer buf;
     try {
       // 进行格式化
       detail::Format_(buf, loglevel, loc);
-
       // 消息
       if (buf.size + len + 1 < buf.arr.size()) [[likely]] {
         std::memcpy(buf.arr.data() + buf.size, msg, len);
@@ -193,18 +184,9 @@ private:
       std::fwrite(e.what(), 1, std::strlen(e.what()), stderr);
 #endif
     }
-    buf.reset();
-  }
-
-  bool Shouldlog(Loglevel loglevel) const noexcept {
-    if (loglevel >= loglevel_) {
-      return true;
-    }
-    return false;
   }
 
   std::string name_;
-  Loglevel loglevel_;
   T append_;
 };
 }; // namespace ikun::log

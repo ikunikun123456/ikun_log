@@ -42,14 +42,13 @@ public:
   }
 
   Logger<StdoutAppend> &GetDefaultLog() noexcept {
-    static auto default_log =
-        Logger<StdoutAppend>("default", Loglevel::INFO, StdoutAppend());
+    static auto default_log = Logger<StdoutAppend>("default", StdoutAppend());
     return default_log;
   }
 
   AsyncLogger<AsyncFileAppend> &GetDefaultAsyncLog() noexcept {
     static auto default_async_log = AsyncLogger<AsyncFileAppend>(
-        "async_default", Loglevel::INFO,
+        "async_default",
         AsyncFileAppend(detail::FilenameFromCurrenttime().c_str()));
     return default_async_log;
   }

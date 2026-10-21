@@ -50,9 +50,8 @@ static constexpr int QUEUE_CAPACITY = IKUN_LOG_QUEUE_CAPACITY;
 namespace ikun::log {
 template <Appendable T> class AsyncLogger {
 public:
-  AsyncLogger(const char *name, Loglevel loglevel, T append) noexcept
-      : name_(name), loglevel_(loglevel), append_(std::move(append)),
-        stop_(false) {
+  AsyncLogger(const char *name, T append) noexcept
+      : name_(name), append_(std::move(append)), stop_(false) {
     thread_ = std::thread(&AsyncLogger::ThreadFunc, this);
   }
 
@@ -144,10 +143,6 @@ public:
 
   void Flush() noexcept { return append_.flush(); }
 
-  void SetLoglevel(Loglevel loglevel) noexcept { loglevel_ = loglevel; }
-
-  Loglevel GetLoglevel() noexcept { return loglevel_; }
-
   void Log(std::string_view msg, Loglevel loglevel,
            const FixString<30> &loc) noexcept {
     return Log_(msg.data(), msg.size(), loglevel, loc);
@@ -165,10 +160,7 @@ private:
                   const FixString<30> &loc, Args &&...args) noexcept {
     static thread_local std::string str;
     try {
-      [[maybe_unused]] static thread_local bool result = [&]() {
-        str.reserve(350);
-        return true;
-      }();
+      str.reserve(350);
       // 消息格式化
       std::vformat_to(std::back_inserter(str), msg,
                       std::make_format_args(args...));
@@ -185,7 +177,7 @@ private:
 
   void Log_(const char *msg, std::size_t len, Loglevel loglevel,
             const FixString<30> &loc) noexcept {
-    static thread_local detail::Buffer buf;
+    detail::Buffer buf;
     try {
       detail::CpuWait cpuwait;
       // 进行格式化
@@ -201,31 +193,20 @@ private:
         buf.vec[buf.size + len] = '\n';
       }
       buf.size += len + 1;
-
       while (true) {
         auto result = queue_.emplace(std::move(buf));
         if (result) [[likely]] {
-          buf.reset();
           return;
         }
         cpuwait.wait();
       }
-
     } catch (const std::exception &e) {
-      buf.reset();
 #ifdef IKUN_LOG_USE_STDERR
       constexpr auto error_msg = "format failed";
       std::fwrite(error_msg, 1, std::strlen(error_msg), stderr);
       std::fwrite(e.what(), 1, std::strlen(e.what()), stderr);
 #endif
     }
-  }
-
-  bool Shouldlog(Loglevel loglevel) const noexcept {
-    if (loglevel >= loglevel_) {
-      return true;
-    }
-    return false;
   }
 
   void ThreadFunc() {
@@ -248,7 +229,8 @@ private:
             continue;
           }
           if constexpr (FileAppendable<T>) {
-            if (count > 10000) [[unlikely]] {
+            if (count > 20000) [[unlikely]] {
+              count = 0;
               append_.SetFile(detail::FilenameFromCurrenttime().c_str());
             }
           }
@@ -274,7 +256,6 @@ private:
   }
 
   std::string name_;
-  Loglevel loglevel_;
   T append_;
   std::atomic<bool> stop_;
   detail::CasQueue<detail::Buffer, QUEUE_CAPACITY> queue_;
